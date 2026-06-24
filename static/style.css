@@ -1,0 +1,208 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d0d0d;
+  --surface:   #1a1a1a;
+  --border:    #2e2e2e;
+  --text:      #e8e8e8;
+  --muted:     #888;
+  --accent:    #f59e0b;
+  --accent-dim:#7c4e00;
+  --danger:    #ef4444;
+  --radius:    10px;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---- Header ---- */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 8px;
+}
+
+header h1 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Audio active indicator — hidden by default, shown via JS */
+.audio-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.audio-indicator.active {
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e88;
+}
+
+.power-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  transition: color 0.2s, border-color 0.2s;
+}
+.power-btn svg { width: 20px; height: 20px; }
+.power-btn.on  { color: #22c55e; border-color: #22c55e; }
+.power-btn.off { color: var(--danger); border-color: var(--danger); }
+
+/* ---- Card ---- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.card h2 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* ---- Animation grid ---- */
+.anim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.anim-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.82rem;
+  padding: 10px 6px;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.3;
+}
+.anim-btn:hover              { background: #252525; border-color: #555; }
+.anim-btn.active             { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.anim-btn.audio              { border-color: #1e4a7c; }
+.anim-btn.audio.active       { background: #0a2540; border-color: #3b82f6; color: #60a5fa; }
+
+.audio-badge {
+  font-size: 0.65rem;
+  background: #1e3a5f;
+  color: #60a5fa;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* ---- Color picker ---- */
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+#color-picker {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 52px;
+  height: 44px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+#color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+#color-picker::-webkit-color-swatch {
+  border: 2px solid var(--border);
+  border-radius: 8px;
+}
+#color-picker::-moz-color-swatch {
+  border: 2px solid var(--border);
+  border-radius: 8px;
+}
+
+.color-hex {
+  font-family: monospace;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+/* ---- Sliders ---- */
+.slider-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px 44px;
+  align-items: center;
+  gap: 10px;
+}
+.slider-label { font-size: 0.78rem; color: var(--muted); text-align: center; }
+.slider-value { font-size: 0.88rem; color: var(--accent); text-align: right; font-variant-numeric: tabular-nums; }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* ---- Power-off state: dim all cards, header stays interactive ---- */
+.app.power-off .card { opacity: 0.4; pointer-events: none; }

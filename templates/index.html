@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LED Controller</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app">
+
+    <header>
+      <h1>LED Controller</h1>
+      <div class="header-right">
+        <span id="audio-indicator" class="audio-indicator" title="Audio input active"></span>
+        <button id="power-btn" class="power-btn" aria-label="Toggle power">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+            <line x1="12" y1="2" x2="12" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Animation</h2>
+      <div class="anim-grid" id="anim-grid">
+        {% for name in animation_names %}
+        <button
+          class="anim-btn{% if name in audio_reactive_names %} audio{% endif %}"
+          data-name="{{ name }}"
+          title="{{ 'Audio reactive' if name in audio_reactive_names else '' }}"
+        >
+          {{ name.replace('_', ' ').title() }}
+          {% if name in audio_reactive_names %}
+          <span class="audio-badge">mic</span>
+          {% endif %}
+        </button>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card" id="color-section">
+      <h2>Color</h2>
+      <div class="color-row">
+        <input type="color" id="color-picker" value="#ff8c00">
+        <span id="color-hex" class="color-hex">#ff8c00</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Brightness</h2>
+      <div class="slider-row">
+        <span class="slider-label">Low</span>
+        <input type="range" id="brightness" min="0" max="100" step="1" value="70">
+        <span class="slider-label">High</span>
+        <span id="brightness-val" class="slider-value">70%</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Speed</h2>
+      <div class="slider-row">
+        <span class="slider-label">Slow</span>
+        <input type="range" id="speed" min="0" max="100" step="1" value="50">
+        <span class="slider-label">Fast</span>
+        <span id="speed-val" class="slider-value">50%</span>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const AUDIO_REACTIVE = new Set({{ audio_reactive_names | tojson }});
+  </script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

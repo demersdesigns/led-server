@@ -1,0 +1,17 @@
+[Unit]
+Description=LED Strip Controller
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=__APP_DIR__
+ExecStart=__VENV_PYTHON__ __APP_DIR__/app.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
