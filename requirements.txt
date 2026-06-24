@@ -1,0 +1,4 @@
+apa102-pi
+flask
+numpy
+sounddevice
