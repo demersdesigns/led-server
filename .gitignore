@@ -16,3 +16,6 @@ __pycache__/
 
 # Logs
 *.log
+
+# Claude reference
+REFERENCE.md
