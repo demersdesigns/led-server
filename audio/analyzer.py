@@ -63,6 +63,9 @@ class AudioAnalyzer:
             logger.warning("Audio disabled — sounddevice not installed")
             return
         device_idx = self._find_device()
+        if device_idx is None:
+            logger.error("Audio device '%s' not found — audio-reactive animations will be inactive", AUDIO_DEVICE_NAME)
+            return
         try:
             self._stream = sd.InputStream(
                 device=device_idx,
