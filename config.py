@@ -2,8 +2,6 @@
 # Hardware
 # ---------------------------------------------------------------------------
 NUM_LEDS = 60
-SPI_BUS = 0
-SPI_DEVICE = 0
 # SK9822: global brightness field always fixed at max (31).
 # All dimming is done by scaling RGB values — never use intermediate
 # hardware brightness values, as they cause flicker/gamma artifacts.

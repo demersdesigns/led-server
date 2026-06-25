@@ -7,6 +7,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$REPO_DIR/venv"
 SERVICE_NAME="led-server"
 SYSTEMD_DIR="/etc/systemd/system"
+CURRENT_USER="$(whoami)"
 
 # ---------------------------------------------------------------------------
 # 1. System packages
@@ -43,6 +44,7 @@ echo "==> Installing systemd service..."
 sed \
   -e "s|__VENV_PYTHON__|$VENV_DIR/bin/python|g" \
   -e "s|__APP_DIR__|$REPO_DIR|g" \
+  -e "s|__USER__|$CURRENT_USER|g" \
   "$REPO_DIR/led-server.service" \
   | sudo tee "$SYSTEMD_DIR/$SERVICE_NAME.service" > /dev/null
 

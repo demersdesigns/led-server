@@ -6,8 +6,6 @@ from config import (
     DEFAULT_ANIMATION,
     GLOBAL_BRIGHTNESS,
     NUM_LEDS,
-    SPI_BUS,
-    SPI_DEVICE,
     TARGET_FPS,
 )
 
@@ -44,8 +42,6 @@ class LEDController:
                 global_brightness=GLOBAL_BRIGHTNESS,
                 mosi=10,
                 sclk=11,
-                bus=SPI_BUS,
-                device=SPI_DEVICE,
             )
         else:
             self._strip = None
