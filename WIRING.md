@@ -148,12 +148,34 @@ Make each connection in this order — **with everything powered off**:
 
 ---
 
-## Step 6 — Power On Order
+## Step 6 — Startup & Shutdown Order
 
-1. Power on the Pi first and let it fully boot
-2. Power on the external PSU second
+### Every time you start the system
 
-Powering the strip before the Pi can send garbage data down the SPI line while the Pi boots, sometimes causing the first few LEDs to flicker or latch a random color.
+1. **Plug in the Zoom H6 via USB** before powering on the Pi
+2. **Power on the Pi** and wait for it to fully boot (~30 seconds)
+3. **Power on the LED strip PSU** last
+
+**Why this order matters:**
+
+- The H6 must be connected before the Pi boots so the `led-server` service detects it when it starts. If the H6 is plugged in after the service has already started, the audio stream will not be running and audio-reactive animations will be inactive. If this happens, run `sudo systemctl restart led-server` on the Pi.
+- The strip PSU must come on after the Pi boots. Powering the strip first can send garbage data down the SPI line during boot, causing the first few LEDs to flicker or latch a random color.
+
+### Every time you shut down
+
+1. **Power off the LED strip PSU** first
+2. **Shut down the Pi** with `sudo shutdown now`
+3. **Unplug the H6** last (or leave it connected)
+
+### Quick-reference card
+
+```
+STARTUP                          SHUTDOWN
+───────                          ────────
+1. Plug in Zoom H6 (USB)         1. Power off strip PSU
+2. Power on Pi → wait 30s        2. sudo shutdown now
+3. Power on strip PSU            3. Unplug H6 (optional)
+```
 
 ---
 
