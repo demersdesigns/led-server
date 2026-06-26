@@ -63,12 +63,9 @@ class AudioAnalyzer:
             logger.warning("Audio disabled — sounddevice not installed")
             return
         device_idx = self._find_device()
-        if device_idx is None:
-            logger.error("Audio device '%s' not found — audio-reactive animations will be inactive", AUDIO_DEVICE_NAME)
-            return
         try:
             self._stream = sd.InputStream(
-                device=device_idx,
+                device=device_idx,   # None → sounddevice system default
                 channels=AUDIO_CHANNELS,
                 samplerate=AUDIO_SAMPLE_RATE,
                 blocksize=AUDIO_CHUNK,
@@ -115,8 +112,9 @@ class AudioAnalyzer:
                 logger.info("Using audio device %d: %s", idx, dev["name"])
                 return idx
         logger.warning(
-            "Device '%s' not found; falling back to system default input",
+            "Audio device '%s' not found; available input devices: %s",
             AUDIO_DEVICE_NAME,
+            [d["name"] for d in devices if d["max_input_channels"] > 0],
         )
         return None
 
