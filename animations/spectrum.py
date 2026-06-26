@@ -18,6 +18,8 @@ class SpectrumAnimation(BaseAnimation):
 
     def update(self, strip, num_leds):
         brightness = self._params["brightness"]
+        # speed repurposed as sensitivity: 0.0→gain 0.25, 0.5→gain 1.0 (neutral), 1.0→gain 4.0
+        gain = 4 ** (self._params["speed"] * 2 - 1)
         audio = self._audio_data or {}
         bands = audio.get("spectrum") or []
 
@@ -25,7 +27,7 @@ class SpectrumAnimation(BaseAnimation):
         leds_per_band = num_leds // num_bands
 
         for band_idx in range(num_bands):
-            level = float(bands[band_idx]) if bands else 0.0
+            level = min(1.0, float(bands[band_idx]) * gain) if bands else 0.0
             lit = int(level * leds_per_band)
             hue = int(band_idx * 256 / num_bands)
             r, g, b = _wheel(hue)

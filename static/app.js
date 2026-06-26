@@ -27,6 +27,9 @@ const brightnessEl   = document.getElementById('brightness');
 const brightnessVal  = document.getElementById('brightness-val');
 const speedEl        = document.getElementById('speed');
 const speedVal       = document.getElementById('speed-val');
+const speedHeading   = document.getElementById('speed-heading');
+const speedMinLabel  = document.getElementById('speed-min-label');
+const speedMaxLabel  = document.getElementById('speed-max-label');
 const appEl          = document.querySelector('.app');
 
 // ---------------------------------------------------------------------------
@@ -98,9 +101,17 @@ function applyState(s) {
     btn.classList.toggle('active', btn.dataset.name === state.animation);
   });
 
-  // Color section: hide for animations that don't use a fixed color
-  const hideColor = AUDIO_REACTIVE.has(state.animation) || state.animation === 'rainbow';
+  // Color section: hide for animations that don't use a fixed color.
+  // beat_pulse is audio-reactive but does use color, so it's excluded from the hide.
+  const hideColor = (AUDIO_REACTIVE.has(state.animation) && state.animation !== 'beat_pulse')
+                    || state.animation === 'rainbow';
   colorSection.style.display = hideColor ? 'none' : '';
+
+  // Speed slider doubles as Sensitivity for the spectrum animation
+  const isSpectrum = state.animation === 'spectrum';
+  speedHeading.textContent  = isSpectrum ? 'Sensitivity' : 'Speed';
+  speedMinLabel.textContent = isSpectrum ? 'Low'  : 'Slow';
+  speedMaxLabel.textContent = isSpectrum ? 'High' : 'Fast';
 
   // Color picker
   const hex = rgbToHex(...state.params.color);
