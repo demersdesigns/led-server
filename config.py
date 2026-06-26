@@ -12,8 +12,8 @@ GLOBAL_BRIGHTNESS = 31
 # ---------------------------------------------------------------------------
 DEFAULT_ANIMATION = "solid"
 DEFAULT_SPEED = 0.5
-DEFAULT_BRIGHTNESS = 0.7
-DEFAULT_COLOR = (255, 140, 0)   # warm orange
+DEFAULT_BRIGHTNESS = 0.1        # dim on boot — just visible
+DEFAULT_COLOR = (255, 250, 240) # soft warm white
 
 # ---------------------------------------------------------------------------
 # Animation loop
