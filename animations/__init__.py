@@ -9,6 +9,7 @@ from animations.comet import CometAnimation
 from animations.vu_meter import VuMeterAnimation
 from animations.ripple import RippleAnimation
 from animations.meteor_shower import MeteorShowerAnimation
+from animations.mirror_bars import MirrorBarsAnimation
 from animations.beat_pulse import BeatPulseAnimation
 from animations.freq_color import FreqColorAnimation
 
@@ -25,6 +26,7 @@ _ALL = [
     VuMeterAnimation,
     RippleAnimation,
     MeteorShowerAnimation,
+    MirrorBarsAnimation,
     BeatPulseAnimation,
     FreqColorAnimation,
 ]
