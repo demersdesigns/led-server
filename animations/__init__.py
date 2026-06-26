@@ -7,7 +7,7 @@ from animations.twinkle import TwinkleAnimation
 from animations.fire import FireAnimation
 from animations.comet import CometAnimation
 from animations.vu_meter import VuMeterAnimation
-from animations.spectrum import SpectrumAnimation
+from animations.ripple import RippleAnimation
 from animations.beat_pulse import BeatPulseAnimation
 from animations.freq_color import FreqColorAnimation
 
@@ -22,7 +22,7 @@ _ALL = [
     FireAnimation,
     CometAnimation,
     VuMeterAnimation,
-    SpectrumAnimation,
+    RippleAnimation,
     BeatPulseAnimation,
     FreqColorAnimation,
 ]
