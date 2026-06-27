@@ -27,9 +27,15 @@ class BaseAnimation(ABC):
         "color": list(DEFAULT_COLOR),
     }
 
+    # Subclasses declare animation-specific sliders here.
+    # Format: { "key": {"label": "Human Name", "default": 0.5} }
+    PARAM_SCHEMA = {}
+
     def __init__(self):
         self._params = {k: (list(v) if isinstance(v, (tuple, list)) else v)
                         for k, v in self.DEFAULT_PARAMS.items()}
+        for key, meta in self.PARAM_SCHEMA.items():
+            self._params[key] = meta["default"]
         self._audio_data = None
         self.frame = 0
 
@@ -54,10 +60,12 @@ class BaseAnimation(ABC):
                         max(0, min(255, int(value[1]))),
                         max(0, min(255, int(value[2]))),
                     ]
-            elif key in ("speed", "brightness"):
-                self._params[key] = max(0.0, min(1.0, float(value)))
             else:
-                self._params[key] = value
+                # speed, brightness, and all PARAM_SCHEMA keys are 0.0-1.0 floats
+                try:
+                    self._params[key] = max(0.0, min(1.0, float(value)))
+                except (TypeError, ValueError):
+                    pass
 
     # ------------------------------------------------------------------
     # Audio data (set by LEDController before each frame for reactive anims)

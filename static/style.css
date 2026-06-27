@@ -242,5 +242,16 @@ input[type="range"]::-moz-range-thumb {
   letter-spacing: -0.02em;
 }
 
+/* ---- Custom animation controls ---- */
+.param-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.custom-param { margin-top: 14px; }
+
 /* ---- Power-off state: dim all cards, header stays interactive ---- */
 .app.power-off .card { opacity: 0.4; pointer-events: none; }

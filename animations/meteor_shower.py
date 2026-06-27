@@ -2,8 +2,6 @@ import math
 import random
 from animations.base import BaseAnimation
 
-_TAIL_DECAY = 0.82   # per-frame multiplier; lower = shorter tail
-
 _LOG_LOW  = math.log10(20.0)
 _LOG_HIGH = math.log10(20000.0)
 
@@ -25,6 +23,11 @@ class MeteorShowerAnimation(BaseAnimation):
     name = "meteor_shower"
     audio_reactive = True
 
+    PARAM_SCHEMA = {
+        "tail":    {"label": "Tail Length", "default": 0.65},
+        "density": {"label": "Density",     "default": 0.5},
+    }
+
     def __init__(self):
         super().__init__()
         self._comets = []    # list of {"pos": float, "vel": float, "color": (r, g, b)}
@@ -34,6 +37,8 @@ class MeteorShowerAnimation(BaseAnimation):
     def update(self, strip, num_leds):
         brightness = self._params["brightness"]
         speed      = self._params["speed"]
+        tail       = self._params["tail"]
+        density    = self._params["density"]
         audio      = self._audio_data or {}
 
         beat          = audio.get("beat", False)
@@ -43,11 +48,12 @@ class MeteorShowerAnimation(BaseAnimation):
         if len(self._pixels) != num_leds:
             self._pixels = [(0.0, 0.0, 0.0)] * num_leds
 
-        # On the rising edge of each beat, launch 1–5 comets based on volume
+        # On the rising edge of each beat, launch comets based on volume + density
         if beat and not self._prev_beat:
-            count = 1 + int(volume * 4)
+            max_comets = 1 + int(density * 9)          # 1–10 based on density
+            count = min(max_comets, 1 + int(volume * max_comets))
             color = _freq_to_rgb(dominant_freq)
-            vel_mag = 0.5 + speed * 2.0     # 0.5–2.5 pixels per frame
+            vel_mag = 0.5 + speed * 2.0
             for _ in range(count):
                 self._comets.append({
                     "pos":   random.uniform(0, num_leds - 1),
@@ -56,9 +62,10 @@ class MeteorShowerAnimation(BaseAnimation):
                 })
         self._prev_beat = beat
 
-        # Decay every pixel to form the tail behind each moving comet
+        # Decay every pixel to form the tail (tail param: 0=short 0.55, 1=long 0.97)
+        decay = 0.55 + tail * 0.42
         self._pixels = [
-            (r * _TAIL_DECAY, g * _TAIL_DECAY, b * _TAIL_DECAY)
+            (r * decay, g * decay, b * decay)
             for r, g, b in self._pixels
         ]
 

@@ -117,6 +117,10 @@ class LEDController:
         with self._lock:
             return self._animation.get_params() if self._animation else {}
 
+    def get_param_schema(self):
+        with self._lock:
+            return self._animation.PARAM_SCHEMA if self._animation else {}
+
     def set_power(self, on):
         with self._lock:
             self._power = bool(on)
@@ -143,6 +147,7 @@ class LEDController:
                 "audio_active": audio_active,
                 "speed_mode": self._speed_mode,
                 "bpm": round(audio_data.get("bpm", 0.0), 1),
+                "param_schema": self._animation.PARAM_SCHEMA if self._animation else {},
             }
 
     # ------------------------------------------------------------------

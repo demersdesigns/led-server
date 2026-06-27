@@ -80,6 +80,14 @@ def api_params():
         else:
             return jsonify({"ok": False, "error": "color must be [r, g, b]"}), 400
 
+    # Custom animation params — validated against the active animation's schema
+    for key in controller.get_param_schema():
+        if key in data:
+            try:
+                params[key] = max(0.0, min(1.0, float(data[key])))
+            except (TypeError, ValueError):
+                pass
+
     controller.set_params(params)
     return jsonify({"ok": True, "params": controller.get_params()})
 

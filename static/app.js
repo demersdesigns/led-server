@@ -9,6 +9,7 @@ const state = {
   audioActive: false,
   speedMode:   'manual',
   bpm:         0,
+  paramSchema: {},
   params: {
     speed:      0.5,
     brightness: 0.7,
@@ -35,8 +36,10 @@ const speedMaxLabel    = document.getElementById('speed-max-label');
 const speedModeToggle  = document.getElementById('speed-mode-toggle');
 const speedSliderRow   = document.getElementById('speed-slider-row');
 const bpmRow           = document.getElementById('bpm-row');
-const bpmDisplay       = document.getElementById('bpm-display');
-const appEl            = document.querySelector('.app');
+const bpmDisplay           = document.getElementById('bpm-display');
+const customControlsCard   = document.getElementById('custom-controls-card');
+const customControls       = document.getElementById('custom-controls');
+const appEl                = document.querySelector('.app');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -94,6 +97,24 @@ function applyState(s) {
     if ('speed'      in s.params) state.params.speed      = s.params.speed;
     if ('brightness' in s.params) state.params.brightness = s.params.brightness;
     if ('color'      in s.params) state.params.color      = s.params.color;
+    // Custom params
+    for (const key of Object.keys(state.paramSchema)) {
+      if (key in s.params) state.params[key] = s.params[key];
+    }
+  }
+
+  // Custom controls — re-render if schema changed, otherwise just sync values
+  if ('param_schema' in s) {
+    const newKeys = JSON.stringify(Object.keys(s.param_schema).sort());
+    const curKeys = JSON.stringify(Object.keys(state.paramSchema).sort());
+    state.paramSchema = s.param_schema;
+    if (newKeys !== curKeys) {
+      renderCustomControls();
+    } else {
+      syncCustomSliders();
+    }
+  } else if (s.params) {
+    syncCustomSliders();
   }
 
   // Power button + app dim
@@ -152,6 +173,10 @@ animGrid.addEventListener('click', async (e) => {
   if (!btn) return;
   const name = btn.dataset.name;
   if (await post('/api/animation', { name })) {
+    try {
+      const res = await fetch('/api/status');
+      if (res.ok) { applyState(await res.json()); return; }
+    } catch (_) {}
     applyState({ animation: name });
   }
 });
@@ -194,6 +219,51 @@ speedModeToggle.addEventListener('click', async (e) => {
     if (mode === 'bpm') startBpmPoll(); else stopBpmPoll();
   }
 });
+
+// ---------------------------------------------------------------------------
+// Custom animation controls — dynamically rendered from param_schema
+// ---------------------------------------------------------------------------
+function renderCustomControls() {
+  const entries = Object.entries(state.paramSchema);
+  customControlsCard.style.display = entries.length ? '' : 'none';
+  customControls.innerHTML = '';
+
+  entries.forEach(([key, meta], i) => {
+    const current = toPct(state.params[key] ?? meta.default);
+    const wrap = document.createElement('div');
+    if (i > 0) wrap.className = 'custom-param';
+    wrap.innerHTML =
+      '<p class="param-label">' + meta.label + '</p>' +
+      '<div class="slider-row">' +
+        '<span class="slider-label">Low</span>' +
+        '<input type="range" id="custom-' + key + '" min="0" max="100" step="1" value="' + current + '">' +
+        '<span class="slider-label">High</span>' +
+        '<span id="custom-' + key + '-val" class="slider-value">' + current + '%</span>' +
+      '</div>';
+    customControls.appendChild(wrap);
+
+    const slider = document.getElementById('custom-' + key);
+    const valEl  = document.getElementById('custom-' + key + '-val');
+    slider.addEventListener('input', () => { valEl.textContent = slider.value + '%'; });
+    slider.addEventListener('change', debounce(async () => {
+      const value = toFloat(slider.value);
+      if (await post('/api/params', { [key]: value })) {
+        state.params[key] = value;
+      }
+    }, 50));
+  });
+}
+
+function syncCustomSliders() {
+  for (const key of Object.keys(state.paramSchema)) {
+    const el = document.getElementById('custom-' + key);
+    if (el && key in state.params) {
+      el.value = toPct(state.params[key]);
+      const valEl = document.getElementById('custom-' + key + '-val');
+      if (valEl) valEl.textContent = el.value + '%';
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // BPM polling — active only when speed mode is 'bpm'
