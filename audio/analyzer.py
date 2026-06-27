@@ -30,8 +30,8 @@ from config import (
 _FREQ_LOW = 20.0
 _FREQ_HIGH = 20000.0
 _RECONNECT_INTERVAL = 5.0  # seconds between reconnect attempts
-_BEAT_BASS_LOW      = 20.0   # kick drum fundamental range — low end
-_BEAT_BASS_HIGH     = 200.0  # kick drum fundamental range — high end
+_BEAT_BASS_LOW      = 40.0   # kick drum fundamental range — low end (avoid sub-rumble)
+_BEAT_BASS_HIGH     = 120.0  # kick drum fundamental range — high end (below bass guitar)
 _MIN_BEAT_INTERVAL  = 60.0 / BPM_MAX  # refractory period — suppresses double-triggers within one kick
 
 
