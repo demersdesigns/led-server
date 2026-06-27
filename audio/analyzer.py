@@ -30,6 +30,8 @@ from config import (
 _FREQ_LOW = 20.0
 _FREQ_HIGH = 20000.0
 _RECONNECT_INTERVAL = 5.0  # seconds between reconnect attempts
+_BEAT_BASS_LOW  = 20.0    # kick drum fundamental range — low end
+_BEAT_BASS_HIGH = 200.0   # kick drum fundamental range — high end
 
 
 class AudioAnalyzer:
@@ -192,13 +194,15 @@ class AudioAnalyzer:
         dom_freq = float(freqs[peak_idx]) if peak_idx < len(freqs) else 200.0
         dom_freq = max(_FREQ_LOW, dom_freq)
 
-        # --- Beat detection: local energy vs. rolling ~1-second average ---
-        energy = float(np.sum(mono ** 2))
+        # --- Beat detection: bass-band energy vs. rolling ~1-second average ---
+        # Using only the kick drum frequency range (20-200 Hz) so that cymbal
+        # hits, vocals, and other high-frequency transients don't trigger beats.
+        bass_mask = (freqs >= _BEAT_BASS_LOW) & (freqs < _BEAT_BASS_HIGH)
+        energy = float(np.sum(fft_mag[bass_mask] ** 2))
         avg_energy = float(np.mean(self._energy_history))
         beat = (
             avg_energy > 0
             and energy > BEAT_THRESHOLD * avg_energy
-            and energy > 1e-4
         )
         self._energy_history[self._history_idx] = energy
         self._history_idx = (self._history_idx + 1) % BEAT_HISTORY
