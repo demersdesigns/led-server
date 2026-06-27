@@ -60,9 +60,10 @@ class AudioAnalyzer:
         self._history_idx = 0
 
         # BPM tracking: timestamps of recent beat onsets → median IBI
-        self._beat_times = []   # list of monotonic timestamps (max BPM_HISTORY+1)
+        self._beat_times = []    # list of monotonic timestamps (max BPM_HISTORY+1)
         self._bpm = 0.0
-        self._prev_beat_cb = False  # rising-edge tracker for callback thread
+        self._prev_beat_cb = False   # rising-edge tracker for callback thread
+        self._prev_bass_fft = None   # previous frame's bass FFT for spectral flux
 
         # Precompute log-spaced band edges once
         self._band_edges = np.logspace(
@@ -194,17 +195,21 @@ class AudioAnalyzer:
         dom_freq = float(freqs[peak_idx]) if peak_idx < len(freqs) else 200.0
         dom_freq = max(_FREQ_LOW, dom_freq)
 
-        # --- Beat detection: bass-band energy vs. rolling ~1-second average ---
-        # Using only the kick drum frequency range (20-200 Hz) so that cymbal
-        # hits, vocals, and other high-frequency transients don't trigger beats.
+        # --- Beat detection: bass spectral flux vs. rolling ~1-second average ---
+        # Flux = sum of *positive* differences between this frame and the last
+        # in the bass band (20-200 Hz). This detects the sharp attack of a kick
+        # drum without being confused by sustained bass lines or 808s — those
+        # produce near-zero flux after their initial hit.
         bass_mask = (freqs >= _BEAT_BASS_LOW) & (freqs < _BEAT_BASS_HIGH)
-        energy = float(np.sum(fft_mag[bass_mask] ** 2))
-        avg_energy = float(np.mean(self._energy_history))
-        beat = (
-            avg_energy > 0
-            and energy > BEAT_THRESHOLD * avg_energy
-        )
-        self._energy_history[self._history_idx] = energy
+        bass_fft  = fft_mag[bass_mask]
+        if self._prev_bass_fft is not None and len(self._prev_bass_fft) == len(bass_fft):
+            flux = float(np.sum(np.maximum(0.0, bass_fft - self._prev_bass_fft)))
+        else:
+            flux = 0.0
+        self._prev_bass_fft = bass_fft
+        avg_flux = float(np.mean(self._energy_history))
+        beat = avg_flux > 0 and flux > BEAT_THRESHOLD * avg_flux
+        self._energy_history[self._history_idx] = flux
         self._history_idx = (self._history_idx + 1) % BEAT_HISTORY
 
         # --- BPM: track beat onsets, compute median inter-beat interval ---
