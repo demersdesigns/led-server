@@ -1,5 +1,6 @@
 import logging
 import threading
+import time
 
 import numpy as np
 
@@ -25,6 +26,7 @@ from config import (
 
 _FREQ_LOW = 20.0
 _FREQ_HIGH = 20000.0
+_RECONNECT_INTERVAL = 5.0  # seconds between reconnect attempts
 
 
 class AudioAnalyzer:
@@ -33,6 +35,9 @@ class AudioAnalyzer:
 
     Must be used in stereo mode on the H6 — the device is not class-compliant
     in multi-track mode and will not appear as a standard USB audio device.
+
+    Includes a watchdog thread that reconnects automatically if the stream
+    drops or the device wasn't present at startup.
     """
 
     def __init__(self):
@@ -43,7 +48,7 @@ class AudioAnalyzer:
         self._dominant_freq = 200.0
 
         self._stream = None
-        self._running = False
+        self._running = False  # controls watcher thread lifetime
 
         # Circular buffer of per-chunk energy for beat detection
         self._energy_history = np.zeros(BEAT_HISTORY)
@@ -62,31 +67,14 @@ class AudioAnalyzer:
         if not HAS_AUDIO:
             logger.warning("Audio disabled — sounddevice not installed")
             return
-        device_idx = self._find_device()
-        try:
-            self._stream = sd.InputStream(
-                device=device_idx,   # None → sounddevice system default
-                channels=AUDIO_CHANNELS,
-                samplerate=AUDIO_SAMPLE_RATE,
-                blocksize=AUDIO_CHUNK,
-                dtype="float32",
-                callback=self._callback,
-            )
-            self._stream.start()
-            self._running = True
-            logger.info("Audio stream started (device=%s)", device_idx)
-        except Exception:
-            logger.exception("Failed to start audio stream")
+        self._running = True
+        self._try_start_stream()
+        t = threading.Thread(target=self._watcher, daemon=True, name="audio-watcher")
+        t.start()
 
     def stop(self):
-        if self._stream:
-            try:
-                self._stream.stop()
-                self._stream.close()
-            except Exception:
-                logger.exception("Error stopping audio stream")
-            self._stream = None
         self._running = False
+        self._close_stream()
 
     def get_data(self):
         """Thread-safe snapshot of the latest analysis frame."""
@@ -101,6 +89,48 @@ class AudioAnalyzer:
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
+
+    def _close_stream(self):
+        stream = self._stream
+        self._stream = None
+        if stream:
+            try:
+                stream.stop()
+                stream.close()
+            except Exception:
+                pass
+
+    def _try_start_stream(self):
+        """Attempt to open the audio input stream. Safe to call repeatedly."""
+        self._close_stream()
+        device_idx = self._find_device()
+        try:
+            stream = sd.InputStream(
+                device=device_idx,   # None → sounddevice system default
+                channels=AUDIO_CHANNELS,
+                samplerate=AUDIO_SAMPLE_RATE,
+                blocksize=AUDIO_CHUNK,
+                dtype="float32",
+                callback=self._callback,
+            )
+            stream.start()
+            self._stream = stream
+            logger.info("Audio stream started (device=%s)", device_idx)
+        except Exception:
+            logger.warning(
+                "Audio stream start failed; will retry in %.0fs", _RECONNECT_INTERVAL
+            )
+
+    def _watcher(self):
+        """Daemon thread: polls stream health and reconnects on failure."""
+        while self._running:
+            time.sleep(_RECONNECT_INTERVAL)
+            if not self._running:
+                break
+            stream_ok = self._stream is not None and self._stream.active
+            if not stream_ok:
+                logger.info("Audio stream inactive; reconnecting...")
+                self._try_start_stream()
 
     def _find_device(self):
         devices = sd.query_devices()
