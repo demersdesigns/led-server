@@ -7,6 +7,8 @@ const state = {
   animation:   'solid',
   power:       true,
   audioActive: false,
+  speedMode:   'manual',
+  bpm:         0,
   params: {
     speed:      0.5,
     brightness: 0.7,
@@ -25,12 +27,16 @@ const colorPicker    = document.getElementById('color-picker');
 const colorHex       = document.getElementById('color-hex');
 const brightnessEl   = document.getElementById('brightness');
 const brightnessVal  = document.getElementById('brightness-val');
-const speedEl        = document.getElementById('speed');
-const speedVal       = document.getElementById('speed-val');
-const speedHeading   = document.getElementById('speed-heading');
-const speedMinLabel  = document.getElementById('speed-min-label');
-const speedMaxLabel  = document.getElementById('speed-max-label');
-const appEl          = document.querySelector('.app');
+const speedEl          = document.getElementById('speed');
+const speedVal         = document.getElementById('speed-val');
+const speedHeading     = document.getElementById('speed-heading');
+const speedMinLabel    = document.getElementById('speed-min-label');
+const speedMaxLabel    = document.getElementById('speed-max-label');
+const speedModeToggle  = document.getElementById('speed-mode-toggle');
+const speedSliderRow   = document.getElementById('speed-slider-row');
+const bpmRow           = document.getElementById('bpm-row');
+const bpmDisplay       = document.getElementById('bpm-display');
+const appEl            = document.querySelector('.app');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -77,9 +83,11 @@ async function post(url, body) {
 // UI sync — accepts the full /api/status shape or any partial subset
 // ---------------------------------------------------------------------------
 function applyState(s) {
-  if ('animation'   in s) state.animation   = s.animation;
-  if ('power'       in s) state.power       = s.power;
+  if ('animation'    in s) state.animation   = s.animation;
+  if ('power'        in s) state.power       = s.power;
   if ('audio_active' in s) state.audioActive = s.audio_active;
+  if ('speed_mode'   in s) state.speedMode   = s.speed_mode;
+  if ('bpm'          in s) state.bpm         = s.bpm;
 
   // Merge nested params if present
   if (s.params) {
@@ -107,11 +115,12 @@ function applyState(s) {
                     || state.animation === 'rainbow';
   colorSection.style.display = hideColor ? 'none' : '';
 
-  // Speed slider doubles as Sensitivity for the spectrum animation
-  const isSpectrum = state.animation === 'spectrum';
-  speedHeading.textContent  = isSpectrum ? 'Sensitivity' : 'Speed';
-  speedMinLabel.textContent = isSpectrum ? 'Low'  : 'Slow';
-  speedMaxLabel.textContent = isSpectrum ? 'High' : 'Fast';
+  // Speed mode toggle
+  document.getElementById('speed-mode-manual').classList.toggle('active', state.speedMode === 'manual');
+  document.getElementById('speed-mode-bpm').classList.toggle('active', state.speedMode === 'bpm');
+  speedSliderRow.style.display = state.speedMode === 'bpm' ? 'none' : '';
+  bpmRow.style.display         = state.speedMode === 'bpm' ? '' : 'none';
+  bpmDisplay.textContent       = state.bpm > 0 ? Math.round(state.bpm) + ' BPM' : '--';
 
   // Color picker
   const hex = rgbToHex(...state.params.color);
@@ -175,6 +184,36 @@ speedEl.addEventListener('change', debounce(async (e) => {
   }
 }, 50));
 
+speedModeToggle.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.mode-btn[data-mode]');
+  if (!btn) return;
+  const mode = btn.dataset.mode;
+  if (mode === state.speedMode) return;
+  if (await post('/api/speed_mode', { mode })) {
+    applyState({ speed_mode: mode });
+    if (mode === 'bpm') startBpmPoll(); else stopBpmPoll();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// BPM polling — active only when speed mode is 'bpm'
+// ---------------------------------------------------------------------------
+let _bpmPollTimer = null;
+
+function startBpmPoll() {
+  if (_bpmPollTimer) return;
+  _bpmPollTimer = setInterval(async () => {
+    try {
+      const res = await fetch('/api/status');
+      if (res.ok) applyState({ bpm: (await res.json()).bpm });
+    } catch (_) {}
+  }, 1000);
+}
+
+function stopBpmPoll() {
+  if (_bpmPollTimer) { clearInterval(_bpmPollTimer); _bpmPollTimer = null; }
+}
+
 // ---------------------------------------------------------------------------
 // Bootstrap: sync UI with server state on page load
 // ---------------------------------------------------------------------------
@@ -182,7 +221,9 @@ speedEl.addEventListener('change', debounce(async (e) => {
   try {
     const res = await fetch('/api/status');
     if (res.ok) {
-      applyState(await res.json());
+      const data = await res.json();
+      applyState(data);
+      if (data.speed_mode === 'bpm') startBpmPoll();
       return;
     }
   } catch (_) {}

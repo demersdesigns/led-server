@@ -21,6 +21,9 @@ from config import (
     AUDIO_SAMPLE_RATE,
     BEAT_HISTORY,
     BEAT_THRESHOLD,
+    BPM_HISTORY,
+    BPM_MIN,
+    BPM_MAX,
     FFT_BANDS,
 )
 
@@ -54,6 +57,11 @@ class AudioAnalyzer:
         self._energy_history = np.zeros(BEAT_HISTORY)
         self._history_idx = 0
 
+        # BPM tracking: timestamps of recent beat onsets → median IBI
+        self._beat_times = []   # list of monotonic timestamps (max BPM_HISTORY+1)
+        self._bpm = 0.0
+        self._prev_beat_cb = False  # rising-edge tracker for callback thread
+
         # Precompute log-spaced band edges once
         self._band_edges = np.logspace(
             np.log10(_FREQ_LOW), np.log10(_FREQ_HIGH), FFT_BANDS + 1
@@ -84,6 +92,7 @@ class AudioAnalyzer:
                 "beat": self._beat,
                 "spectrum": list(self._spectrum),
                 "dominant_freq": self._dominant_freq,
+                "bpm": self._bpm,
             }
 
     # ------------------------------------------------------------------
@@ -194,8 +203,27 @@ class AudioAnalyzer:
         self._energy_history[self._history_idx] = energy
         self._history_idx = (self._history_idx + 1) % BEAT_HISTORY
 
+        # --- BPM: track beat onsets, compute median inter-beat interval ---
+        bpm = self._bpm
+        if beat and not self._prev_beat_cb:
+            now = time.monotonic()
+            self._beat_times.append(now)
+            if len(self._beat_times) > BPM_HISTORY + 1:
+                self._beat_times.pop(0)
+            if len(self._beat_times) >= 3:  # need at least 2 intervals
+                intervals = [
+                    self._beat_times[i + 1] - self._beat_times[i]
+                    for i in range(len(self._beat_times) - 1)
+                ]
+                median_ibi = sorted(intervals)[len(intervals) // 2]
+                if median_ibi > 0:
+                    raw = 60.0 / median_ibi
+                    bpm = max(BPM_MIN, min(BPM_MAX, raw))
+        self._prev_beat_cb = beat
+
         with self._lock:
             self._volume = volume
             self._beat = beat
             self._spectrum = bands.tolist()
             self._dominant_freq = dom_freq
+            self._bpm = bpm

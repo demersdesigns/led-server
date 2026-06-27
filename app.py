@@ -84,6 +84,17 @@ def api_params():
     return jsonify({"ok": True, "params": controller.get_params()})
 
 
+@app.route("/api/speed_mode", methods=["POST"])
+def api_speed_mode():
+    """Switch speed control between 'manual' (slider) and 'bpm' (audio tempo)."""
+    data = request.get_json(force=True, silent=True) or {}
+    mode = str(data.get("mode", "")).strip()
+    if mode not in ("manual", "bpm"):
+        return jsonify({"ok": False, "error": "mode must be 'manual' or 'bpm'"}), 400
+    controller.set_speed_mode(mode)
+    return jsonify({"ok": True, "speed_mode": mode})
+
+
 @app.route("/api/off", methods=["POST"])
 def api_off():
     """Turn off all LEDs immediately."""

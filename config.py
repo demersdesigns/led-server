@@ -30,3 +30,6 @@ AUDIO_DEVICE_NAME = "H6"       # substring match against sounddevice device list
 FFT_BANDS = 12
 BEAT_THRESHOLD = 1.5            # energy ratio vs. rolling average to flag a beat
 BEAT_HISTORY = 43               # ~1 second of history at 44100/1024
+BPM_MIN = 40.0                  # slowest tempo we'll report (maps to speed 0.0)
+BPM_MAX = 220.0                 # fastest tempo we'll report (maps to speed 1.0)
+BPM_HISTORY = 8                 # beat timestamps to keep for median IBI calculation

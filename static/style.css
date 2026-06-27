@@ -204,5 +204,43 @@ input[type="range"]::-moz-range-thumb {
   border: none;
 }
 
+/* ---- Speed mode toggle ---- */
+.mode-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.mode-btn {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 0;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.mode-btn:hover  { background: #252525; border-color: #555; }
+.mode-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+/* ---- BPM display ---- */
+.bpm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+.bpm-label { font-size: 0.78rem; color: var(--muted); }
+.bpm-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
 /* ---- Power-off state: dim all cards, header stays interactive ---- */
 .app.power-off .card { opacity: 0.4; pointer-events: none; }

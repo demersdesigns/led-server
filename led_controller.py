@@ -3,7 +3,10 @@ import threading
 import time
 
 from config import (
+    BPM_MIN,
+    BPM_MAX,
     DEFAULT_ANIMATION,
+    DEFAULT_SPEED,
     GLOBAL_BRIGHTNESS,
     NUM_LEDS,
     TARGET_FPS,
@@ -35,6 +38,8 @@ class LEDController:
         self._lock = threading.Lock()
         self._running = False
         self._thread = None
+        self._speed_mode = 'manual'
+        self._manual_speed = DEFAULT_SPEED
 
         if HAS_HARDWARE:
             self._strip = _driver.APA102(
@@ -88,9 +93,18 @@ class LEDController:
             self._animation.set_params(old_params)
             self._current_name = name
 
+    def set_speed_mode(self, mode):
+        """Switch between 'manual' (slider) and 'bpm' (audio tempo) speed control."""
+        with self._lock:
+            self._speed_mode = mode
+            if mode == 'manual' and self._animation:
+                self._animation.set_params({'speed': self._manual_speed})
+
     def set_params(self, params):
         """Update parameters on the current animation (e.g. speed, brightness, color)."""
         with self._lock:
+            if 'speed' in params:
+                self._manual_speed = params['speed']
             if self._animation:
                 self._animation.set_params(params)
 
@@ -108,15 +122,22 @@ class LEDController:
         """Return a JSON-serialisable status dict for the /api/status route."""
         with self._lock:
             params = self._animation.get_params() if self._animation else {}
+            if self._speed_mode == 'bpm':
+                # Return manual speed so the slider doesn't chase the BPM value
+                params = dict(params)
+                params['speed'] = self._manual_speed
             audio_active = (
                 self._audio is not None
                 and getattr(self._audio, "_running", False)
             )
+            audio_data = self._audio.get_data() if self._audio else {}
             return {
                 "animation": self._current_name,
                 "power": self._power,
                 "params": params,
                 "audio_active": audio_active,
+                "speed_mode": self._speed_mode,
+                "bpm": round(audio_data.get("bpm", 0.0), 1),
             }
 
     # ------------------------------------------------------------------
@@ -137,11 +158,19 @@ class LEDController:
             with self._lock:
                 power = self._power
                 anim = self._animation
+                speed_mode = self._speed_mode
 
             if power and anim and self._strip:
-                # Provide fresh audio data to reactive animations each frame
-                if anim.audio_reactive and self._audio:
-                    anim.audio_data = self._audio.get_data()
+                audio_data = self._audio.get_data() if self._audio else {}
+
+                if anim.audio_reactive:
+                    anim.audio_data = audio_data
+
+                if speed_mode == 'bpm':
+                    bpm = audio_data.get('bpm', 0.0)
+                    if bpm > 0:
+                        bpm_speed = max(0.0, min(1.0, (bpm - BPM_MIN) / (BPM_MAX - BPM_MIN)))
+                        anim._params['speed'] = bpm_speed
 
                 try:
                     anim.update(self._strip, self._num_leds)

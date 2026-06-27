@@ -61,11 +61,19 @@
 
     <section class="card">
       <h2 id="speed-heading">Speed</h2>
-      <div class="slider-row">
+      <div class="mode-toggle" id="speed-mode-toggle">
+        <button class="mode-btn active" id="speed-mode-manual" data-mode="manual">Manual</button>
+        <button class="mode-btn" id="speed-mode-bpm" data-mode="bpm">BPM</button>
+      </div>
+      <div class="slider-row" id="speed-slider-row">
         <span class="slider-label" id="speed-min-label">Slow</span>
         <input type="range" id="speed" min="0" max="100" step="1" value="50">
         <span class="slider-label" id="speed-max-label">Fast</span>
         <span id="speed-val" class="slider-value">50%</span>
+      </div>
+      <div class="bpm-row" id="bpm-row" style="display:none">
+        <span class="bpm-label">Detected tempo</span>
+        <span id="bpm-display" class="bpm-value">--</span>
       </div>
     </section>
 
