@@ -30,8 +30,9 @@ from config import (
 _FREQ_LOW = 20.0
 _FREQ_HIGH = 20000.0
 _RECONNECT_INTERVAL = 5.0  # seconds between reconnect attempts
-_BEAT_BASS_LOW  = 20.0    # kick drum fundamental range — low end
-_BEAT_BASS_HIGH = 200.0   # kick drum fundamental range — high end
+_BEAT_BASS_LOW      = 20.0   # kick drum fundamental range — low end
+_BEAT_BASS_HIGH     = 200.0  # kick drum fundamental range — high end
+_MIN_BEAT_INTERVAL  = 60.0 / BPM_MAX  # refractory period — suppresses double-triggers within one kick
 
 
 class AudioAnalyzer:
@@ -64,6 +65,7 @@ class AudioAnalyzer:
         self._bpm = 0.0
         self._prev_beat_cb = False   # rising-edge tracker for callback thread
         self._prev_bass_fft = None   # previous frame's bass FFT for spectral flux
+        self._last_beat_time = 0.0   # monotonic time of last confirmed beat (refractory gate)
 
         # Precompute log-spaced band edges once
         self._band_edges = np.logspace(
@@ -208,14 +210,20 @@ class AudioAnalyzer:
             flux = 0.0
         self._prev_bass_fft = bass_fft
         avg_flux = float(np.mean(self._energy_history))
-        beat = avg_flux > 0 and flux > BEAT_THRESHOLD * avg_flux
+        now = time.monotonic()
+        beat = (
+            avg_flux > 0
+            and flux > BEAT_THRESHOLD * avg_flux
+            and (now - self._last_beat_time) >= _MIN_BEAT_INTERVAL
+        )
+        if beat:
+            self._last_beat_time = now
         self._energy_history[self._history_idx] = flux
         self._history_idx = (self._history_idx + 1) % BEAT_HISTORY
 
         # --- BPM: track beat onsets, compute median inter-beat interval ---
         bpm = self._bpm
         if beat and not self._prev_beat_cb:
-            now = time.monotonic()
             self._beat_times.append(now)
             if len(self._beat_times) > BPM_HISTORY + 1:
                 self._beat_times.pop(0)
