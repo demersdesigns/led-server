@@ -89,6 +89,11 @@ class LEDController:
             raise ValueError(f"Unknown animation: {name!r}")
         with self._lock:
             old_params = self._animation.get_params() if self._animation else {}
+            if self._speed_mode == 'bpm':
+                # Don't carry the BPM-injected speed into the new animation;
+                # the loop will inject the correct derived value on the next frame.
+                old_params = dict(old_params)
+                old_params['speed'] = self._manual_speed
             self._animation = anim_cls()
             self._animation.set_params(old_params)
             self._current_name = name
