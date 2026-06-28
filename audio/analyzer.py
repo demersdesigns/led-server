@@ -30,8 +30,9 @@ from config import (
 _FREQ_LOW = 20.0
 _FREQ_HIGH = 20000.0
 _RECONNECT_INTERVAL = 5.0  # seconds between reconnect attempts
-_BEAT_BASS_LOW      = 20.0   # kick drum fundamental range — low end
-_BEAT_BASS_HIGH     = 180.0  # kick drum fundamental range — high end
+_BEAT_BASS_LOW      = 20.0    # kick drum fundamental range — low end
+_BEAT_BASS_HIGH     = 200.0   # kick drum fundamental range — high end
+_BEAT_FFT_SIZE      = 4096    # larger FFT window for beat detection (~10.8 Hz/bin vs ~43 Hz/bin)
 _MIN_BEAT_INTERVAL  = 60.0 / BPM_MAX  # refractory period — suppresses double-triggers within one kick
 
 
@@ -64,8 +65,10 @@ class AudioAnalyzer:
         self._beat_times = []    # list of monotonic timestamps (max BPM_HISTORY+1)
         self._bpm = 0.0
         self._prev_beat_cb = False   # rising-edge tracker for callback thread
-        self._prev_bass_fft = None   # previous frame's bass FFT for spectral flux
         self._last_beat_time = 0.0   # monotonic time of last confirmed beat (refractory gate)
+
+        # Rolling audio buffer for the high-resolution beat-detection FFT
+        self._beat_buffer = np.zeros(_BEAT_FFT_SIZE)
 
         # Precompute log-spaced band edges once
         self._band_edges = np.logspace(
@@ -197,28 +200,29 @@ class AudioAnalyzer:
         dom_freq = float(freqs[peak_idx]) if peak_idx < len(freqs) else 200.0
         dom_freq = max(_FREQ_LOW, dom_freq)
 
-        # --- Beat detection: bass spectral flux vs. rolling ~1-second average ---
-        # Flux = sum of *positive* differences between this frame and the last
-        # in the bass band (20-200 Hz). This detects the sharp attack of a kick
-        # drum without being confused by sustained bass lines or 808s — those
-        # produce near-zero flux after their initial hit.
-        bass_mask = (freqs >= _BEAT_BASS_LOW) & (freqs < _BEAT_BASS_HIGH)
-        bass_fft  = fft_mag[bass_mask]
-        if self._prev_bass_fft is not None and len(self._prev_bass_fft) == len(bass_fft):
-            flux = float(np.sum(np.maximum(0.0, bass_fft - self._prev_bass_fft)))
-        else:
-            flux = 0.0
-        self._prev_bass_fft = bass_fft
-        avg_flux = float(np.mean(self._energy_history))
+        # --- Beat detection: bass energy using a high-resolution rolling FFT ---
+        # A 4096-sample window gives ~10.8 Hz/bin resolution, putting 17 usable
+        # bins across 20-200 Hz.  We append each 1024-sample chunk to a rolling
+        # buffer and run the larger FFT every callback.
+        self._beat_buffer = np.roll(self._beat_buffer, -n)
+        self._beat_buffer[-n:] = mono
+
+        beat_windowed = self._beat_buffer * np.hanning(_BEAT_FFT_SIZE)
+        beat_fft      = np.abs(np.fft.rfft(beat_windowed))
+        beat_freqs    = np.fft.rfftfreq(_BEAT_FFT_SIZE, d=1.0 / AUDIO_SAMPLE_RATE)
+        bass_mask     = (beat_freqs >= _BEAT_BASS_LOW) & (beat_freqs < _BEAT_BASS_HIGH)
+        energy        = float(np.sum(beat_fft[bass_mask] ** 2))
+
+        avg_energy = float(np.mean(self._energy_history))
         now = time.monotonic()
         beat = (
-            avg_flux > 0
-            and flux > BEAT_THRESHOLD * avg_flux
+            avg_energy > 0
+            and energy > BEAT_THRESHOLD * avg_energy
             and (now - self._last_beat_time) >= _MIN_BEAT_INTERVAL
         )
         if beat:
             self._last_beat_time = now
-        self._energy_history[self._history_idx] = flux
+        self._energy_history[self._history_idx] = energy
         self._history_idx = (self._history_idx + 1) % BEAT_HISTORY
 
         # --- BPM: track beat onsets, compute median inter-beat interval ---
