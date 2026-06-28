@@ -40,6 +40,7 @@ class LEDController:
         self._thread = None
         self._speed_mode = 'manual'
         self._manual_speed = DEFAULT_SPEED
+        self._strip_cleared = False  # True while strip is held dark waiting for BPM
 
         if HAS_HARDWARE:
             self._strip = _driver.APA102(
@@ -172,21 +173,30 @@ class LEDController:
 
             if power and anim and self._strip:
                 audio_data = self._audio.get_data() if self._audio else {}
+                bpm = audio_data.get('bpm', 0.0)
 
-                if anim.audio_reactive:
-                    anim.audio_data = audio_data
+                # Non-audio-reactive animations pause when no tempo is detected
+                paused = (not anim.audio_reactive) and (bpm == 0.0)
 
-                if speed_mode == 'bpm':
-                    bpm = audio_data.get('bpm', 0.0)
-                    if bpm > 0:
+                if paused:
+                    if not self._strip_cleared:
+                        self._clear()
+                        self._strip_cleared = True
+                else:
+                    self._strip_cleared = False
+
+                    if anim.audio_reactive:
+                        anim.audio_data = audio_data
+
+                    if speed_mode == 'bpm' and bpm > 0:
                         bpm_speed = max(0.0, min(1.0, (bpm - BPM_MIN) / (BPM_MAX - BPM_MIN)))
                         anim._params['speed'] = bpm_speed
 
-                try:
-                    anim.update(self._strip, self._num_leds)
-                    self._strip.show()
-                except Exception:
-                    logger.exception("Error in animation frame")
+                    try:
+                        anim.update(self._strip, self._num_leds)
+                        self._strip.show()
+                    except Exception:
+                        logger.exception("Error in animation frame")
 
             remaining = interval - (time.monotonic() - t0)
             if remaining > 0:
