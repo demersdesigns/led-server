@@ -24,11 +24,14 @@ class CometStormAnimation(BaseAnimation):
     audio_reactive = True
 
     PARAM_SCHEMA = {
-        "tail": {"label": "Tail Length", "default": 0.65},
+        "tail":        {"label": "Tail Length",  "default": 0.65},
+        "hue":         {"label": "Hue Shift",    "default": 0.0},
+        "spread":      {"label": "Color Spread", "default": 1.0},
+        "sensitivity": {"label": "Sensitivity",  "default": 0.5},
+        "density":     {"label": "Density",      "default": 0.5},
     }
 
-    _THRESHOLD = 0.15  # minimum band level to spawn
-    _MIN_CD    = 4     # minimum frames between launches per band
+    _MIN_CD = 4  # minimum frames between launches per band
 
     def __init__(self):
         super().__init__()
@@ -37,12 +40,19 @@ class CometStormAnimation(BaseAnimation):
         self._cooldowns = {}  # band_idx → remaining cooldown frames
 
     def update(self, strip, num_leds):
-        speed      = self._params["speed"]
-        brightness = self._params["brightness"]
-        tail       = self._params["tail"]
-        audio      = self._audio_data or {}
-        bands      = audio.get("spectrum") or []
-        num_bands  = len(bands)
+        speed       = self._params["speed"]
+        brightness  = self._params["brightness"]
+        tail        = self._params["tail"]
+        hue_shift   = int(self._params["hue"] * 256)
+        spread      = self._params["spread"]
+        sensitivity = self._params["sensitivity"]
+        density     = self._params["density"]
+        audio       = self._audio_data or {}
+        bands       = audio.get("spectrum") or []
+        num_bands   = len(bands)
+
+        # sensitivity 1.0 → threshold 0.05 (very reactive); 0.0 → 0.3 (loud hits only)
+        threshold = 0.3 - sensitivity * 0.25
 
         if len(self._pixels) != num_leds:
             self._pixels = [(0.0, 0.0, 0.0)] * num_leds
@@ -56,11 +66,11 @@ class CometStormAnimation(BaseAnimation):
                 self._cooldowns[band_idx] = cd - 1
                 continue
 
-            if level < self._THRESHOLD:
+            if level < threshold:
                 continue
 
             pos     = (band_idx + 0.5) * num_leds / num_bands
-            hue     = int(band_idx * 256 / num_bands)
+            hue     = int(hue_shift + band_idx * 256 * spread / num_bands) % 256
             r, g, b = _wheel(hue)
             vel_mag = 0.4 + speed * 2.0
 
@@ -73,8 +83,9 @@ class CometStormAnimation(BaseAnimation):
                     "color": (r, g, b),
                 })
 
-            # Cooldown is shorter for hot bands so they fire more frequently
-            self._cooldowns[band_idx] = max(self._MIN_CD, int(12 * (1.0 - level)))
+            # density 1.0 → short cooldown (dense); 0.0 → long cooldown (sparse)
+            base_cd = max(self._MIN_CD, int(12 * (1.0 - level)))
+            self._cooldowns[band_idx] = max(self._MIN_CD, int(base_cd * (1.5 - density)))
 
         # Tail decay (tail=0 → decay 0.55 sharp, tail=1 → decay 0.97 long glow)
         decay = 0.55 + tail * 0.42

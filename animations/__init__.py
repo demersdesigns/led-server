@@ -1,4 +1,5 @@
 from animations.solid import SolidAnimation
+from animations.larson import LarsonAnimation
 from animations.breathe import BreatheAnimation
 from animations.chase import ChaseAnimation
 from animations.rainbow import RainbowAnimation
@@ -13,9 +14,9 @@ from animations.comet_storm import CometStormAnimation
 from animations.beat_pulse import BeatPulseAnimation
 from animations.freq_color import FreqColorAnimation
 
-# Ordered list used for UI display
+# Ordered list used for UI display — Solid at end for testing access
 _ALL = [
-    SolidAnimation,
+    LarsonAnimation,
     BreatheAnimation,
     ChaseAnimation,
     RainbowAnimation,
@@ -29,6 +30,7 @@ _ALL = [
     CometStormAnimation,
     BeatPulseAnimation,
     FreqColorAnimation,
+    SolidAnimation,
 ]
 
 ANIMATIONS = {cls.name: cls for cls in _ALL}
