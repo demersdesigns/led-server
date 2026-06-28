@@ -53,7 +53,14 @@ sudo systemctl enable "$SERVICE_NAME"
 sudo systemctl restart "$SERVICE_NAME"
 
 # ---------------------------------------------------------------------------
-# 5. Done
+# 5. Shell alias
+# ---------------------------------------------------------------------------
+echo "==> Adding led-deploy alias to ~/.zshrc..."
+grep -q "led-deploy" ~/.zshrc 2>/dev/null || echo "alias led-deploy='git pull && find . -name \"__pycache__\" -type d -exec rm -rf {} + ; sudo systemctl restart led-server'" >> ~/.zshrc
+echo "    Run 'source ~/.zshrc' or open a new terminal to activate."
+
+# ---------------------------------------------------------------------------
+# 6. Done
 # ---------------------------------------------------------------------------
 echo ""
 echo "==> Installation complete."
