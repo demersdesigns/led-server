@@ -38,7 +38,7 @@ class LEDController:
         self._lock = threading.Lock()
         self._running = False
         self._thread = None
-        self._speed_mode = 'manual'
+        self._speed_mode = 'bpm'
         self._manual_speed = DEFAULT_SPEED
         self._strip_cleared = False  # True while strip is held dark waiting for BPM
 
@@ -98,6 +98,9 @@ class LEDController:
             self._animation = anim_cls()
             self._animation.set_params(old_params)
             self._current_name = name
+            # Manual mode is only available for the solid animation (testing)
+            if name != 'solid':
+                self._speed_mode = 'bpm'
 
     def set_speed_mode(self, mode):
         """Switch between 'manual' (slider) and 'bpm' (audio tempo) speed control."""

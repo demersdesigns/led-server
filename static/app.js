@@ -136,11 +136,13 @@ function applyState(s) {
                     || state.animation === 'rainbow';
   colorSection.style.display = hideColor ? 'none' : '';
 
-  // Speed mode toggle
+  // Speed card: toggle only available for solid (manual testing); BPM display always on otherwise
+  const isSolid = state.animation === 'solid';
+  speedModeToggle.style.display = isSolid ? '' : 'none';
   document.getElementById('speed-mode-manual').classList.toggle('active', state.speedMode === 'manual');
   document.getElementById('speed-mode-bpm').classList.toggle('active', state.speedMode === 'bpm');
-  speedSliderRow.style.display = state.speedMode === 'bpm' ? 'none' : '';
-  bpmRow.style.display         = state.speedMode === 'bpm' ? '' : 'none';
+  speedSliderRow.style.display = (isSolid && state.speedMode === 'manual') ? '' : 'none';
+  bpmRow.style.display         = (!isSolid || state.speedMode === 'bpm') ? '' : 'none';
   bpmDisplay.textContent       = state.bpm > 0 ? Math.round(state.bpm) + ' BPM' : '--';
 
   // Color picker
@@ -175,7 +177,13 @@ animGrid.addEventListener('click', async (e) => {
   if (await post('/api/animation', { name })) {
     try {
       const res = await fetch('/api/status');
-      if (res.ok) { applyState(await res.json()); return; }
+      if (res.ok) {
+        const data = await res.json();
+        applyState(data);
+        if (data.animation === 'solid' && data.speed_mode === 'manual') stopBpmPoll();
+        else startBpmPoll();
+        return;
+      }
     } catch (_) {}
     applyState({ animation: name });
   }
@@ -293,9 +301,10 @@ function stopBpmPoll() {
     if (res.ok) {
       const data = await res.json();
       applyState(data);
-      if (data.speed_mode === 'bpm') startBpmPoll();
+      if (!(data.animation === 'solid' && data.speed_mode === 'manual')) startBpmPoll();
       return;
     }
   } catch (_) {}
-  applyState(state);  // fall back to JS defaults
+  applyState(state);
+  startBpmPoll();  // default is BPM mode
 })();
