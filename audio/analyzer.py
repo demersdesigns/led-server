@@ -34,6 +34,7 @@ _BEAT_BASS_LOW      = 20.0    # kick drum fundamental range — low end
 _BEAT_BASS_HIGH     = 200.0   # kick drum fundamental range — high end
 _BEAT_FFT_SIZE      = 4096    # larger FFT window for beat detection (~10.8 Hz/bin vs ~43 Hz/bin)
 _MIN_BEAT_INTERVAL  = 60.0 / BPM_MAX  # refractory period — suppresses double-triggers within one kick
+_BPM_TIMEOUT        = 2.0             # seconds without a beat → reset BPM to 0 (music stopped)
 
 
 class AudioAnalyzer:
@@ -241,6 +242,10 @@ class AudioAnalyzer:
                     raw = 60.0 / median_ibi
                     bpm = max(BPM_MIN, min(BPM_MAX, raw))
         self._prev_beat_cb = beat
+
+        # Reset BPM to 0 if no beat has arrived recently — music stopped or too quiet
+        if (now - self._last_beat_time) > _BPM_TIMEOUT:
+            bpm = 0.0
 
         with self._lock:
             self._volume = volume
