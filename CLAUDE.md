@@ -20,7 +20,7 @@ led-deploy
 ```
 Which expands to:
 ```
-git pull && find . -name "__pycache__" -type d -exec rm -rf {} + ; sudo systemctl restart led-server
+git pull && find . -path ./venv -prune -o -name "__pycache__" -type d -exec rm -rf {} + ; sudo systemctl restart led-server
 ```
 
 ## Key reminders
