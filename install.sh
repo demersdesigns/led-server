@@ -7,7 +7,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$REPO_DIR/venv"
 SERVICE_NAME="led-server"
 SYSTEMD_DIR="/etc/systemd/system"
-CURRENT_USER="$(whoami)"
+CURRENT_USER="${SUDO_USER:-$(whoami)}"
 
 # ---------------------------------------------------------------------------
 # 1. System packages
