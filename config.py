@@ -10,7 +10,7 @@ GLOBAL_BRIGHTNESS = 31
 # ---------------------------------------------------------------------------
 # Defaults  (speed and brightness are normalized floats 0.0–1.0)
 # ---------------------------------------------------------------------------
-DEFAULT_ANIMATION = "solid"
+DEFAULT_ANIMATION = "comet_storm"
 DEFAULT_SPEED = 0.5
 DEFAULT_BRIGHTNESS = 0.1        # dim on boot — just visible
 DEFAULT_COLOR = (255, 250, 240) # soft warm white
