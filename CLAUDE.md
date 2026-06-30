@@ -9,8 +9,8 @@ Always greet the user with the hardware startup checklist below before asking wh
 
 Run through this every time before working on the project:
 
-1. **Zoom H6** — Power on → choose **Interface mode** → choose **Use battery**
-2. **Raspberry Pi** — Power on → wait ~30 seconds to boot
+1. **Raspberry Pi** — Power on → wait ~30 seconds to boot (H6 needs USB connection to enter Interface mode)
+2. **Zoom H6** — Power on → choose **Interface mode** → choose **Use battery**
 3. **LED strip PSU** — Power on last
 
 ## Deploy workflow
