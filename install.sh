@@ -56,7 +56,7 @@ sudo systemctl restart "$SERVICE_NAME"
 # 5. Shell alias
 # ---------------------------------------------------------------------------
 echo "==> Adding shell aliases to ~/.bashrc..."
-grep -q "led-deploy" ~/.bashrc 2>/dev/null || printf "%s\n" "alias led-deploy='cd $REPO_DIR && git pull && find . -path ./venv -prune -o -name __pycache__ -type d -exec rm -rf {} + ; sudo systemctl restart led-server'" >> ~/.bashrc
+grep -q "led-deploy" ~/.bashrc 2>/dev/null || printf "%s\n" "alias led-deploy='cd $REPO_DIR && git pull && sudo find . -path ./venv -prune -o -name __pycache__ -type d -exec rm -rf {} + ; sudo systemctl restart led-server'" >> ~/.bashrc
 grep -q "led-startup" ~/.bashrc 2>/dev/null || printf '%s\n' 'led-startup() { echo "Hardware Startup Checklist"; echo "1. H6 - Power on, Interface mode, Use battery"; echo "2. Pi - Power on, wait 30s"; echo "3. LED PSU - Power on last"; }' >> ~/.bashrc
 echo "    Run 'source ~/.bashrc' or open a new terminal to activate."
 

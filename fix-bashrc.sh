@@ -27,7 +27,7 @@ sed -i '/^ *-rf {} /d'        "$BASHRC"
 sed -i "/^  sudo systemctl/d" "$BASHRC"
 
 echo "==> Adding clean led-deploy alias..."
-printf '%s\n' "alias led-deploy='cd ~/led-server && git pull && find . -path ./venv -prune -o -name __pycache__ -type d -exec rm -rf {} + ; sudo systemctl restart led-server'" >> "$BASHRC"
+printf '%s\n' "alias led-deploy='cd ~/led-server && git pull && sudo find . -path ./venv -prune -o -name __pycache__ -type d -exec rm -rf {} + ; sudo systemctl restart led-server'" >> "$BASHRC"
 
 echo "==> Adding clean led-startup function..."
 printf '%s\n' 'led-startup() { echo "Hardware Startup Checklist"; echo "1. H6 - Power on, Interface mode, Use battery"; echo "2. Pi - Power on, wait 30s"; echo "3. LED PSU - Power on last"; }' >> "$BASHRC"
