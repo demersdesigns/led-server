@@ -151,6 +151,13 @@ class AudioAnalyzer:
                 self._try_start_stream()
 
     def _find_device(self):
+        # Force PortAudio to re-enumerate USB devices — cached list misses
+        # devices that were plugged in or configured after process start.
+        try:
+            sd._terminate()
+            sd._initialize()
+        except Exception:
+            pass
         devices = sd.query_devices()
         for idx, dev in enumerate(devices):
             if (
